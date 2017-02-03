@@ -1,15 +1,17 @@
 import React from 'react';
 import {
-  Table, 
-  Column, 
+  Table,
+  Column,
   Cell
 } from 'fixed-data-table';
 import 'fixed-data-table/dist/fixed-data-table.min.css';
-// hack: `stream.Transform` (stream-browserify) is undefined in `csv-parse` when 
-// built with @jupyterlabextension-builder 
+// hack: `stream.Transform` (stream-browserify) is undefined in `csv-parse` when
+// built with @jupyterlabextension-builder
 // import infer from 'jsontableschema/lib/infer';
 import infer from 'jsontableschema/lib/infer';
 import './index.css';
+import 'clusterize.js/clusterize.css';
+import Clusterize from 'clusterize.js/clusterize.min.js';
 
 const ROW_HEIGHT = 34;
 
@@ -20,49 +22,38 @@ function inferSchema(data) {
 }
 
 export default class JSONTable extends React.Component {
-    
-  state = {
-    columnWidths: {}
+
+  componentDidMount() {
+    let { resources: [ { schema, data, ...options }] } = this.props;
+    if (!schema) schema = inferSchema(data);
+    // var rows = data.map(row => "1");
+    var clusterize = new Clusterize({
+      // rows: data.map(row => "<tr><td>" + Object.values(row).join("</td><td>") + "</td></tr>"),
+      scrollId: 'scrollArea',
+      contentId: 'contentArea'
+    });
   }
 
   render() {
-    let { resources: [ { schema, data, ...options }] } = this.props;
-    if (!schema) schema = inferSchema(data);
     return (
-      <Table
-        rowHeight={ROW_HEIGHT}
-        headerHeight={ROW_HEIGHT}
-        rowsCount={data.length}
-        width={3000}
-        height={ROW_HEIGHT * (data.length + 1)}
-        onColumnResizeEndCallback={(columnWidth, columnKey) => {
-          this.setState(({columnWidths}) => ({
-            columnWidths: {
-              ...columnWidths,
-              [columnKey]: columnWidth,
-            }
-          }));
-        }}
-        {...options}
-      >
-        {
-          schema.fields.map((field, fieldIndex) =>
-            <Column
-              key={fieldIndex}
-              columnKey={field.name}
-              header={(props) =>
-                <Cell>{field.name}</Cell>
-              }
-              cell={(props) =>
-                <Cell>{data[props.rowIndex][field.name]}</Cell>
-              }
-              width={this.state.columnWidths[field.name] || 300}
-              fixed={false}
-              isResizable={true}
-            />
-          )
-        }
-      </Table>
+      <div className="clusterize">
+        <table>
+          <thead>
+            <tr>
+              <th>Headers</th>
+            </tr>
+          </thead>
+        </table>
+        <div id="scrollArea" className="clusterize-scroll">
+          <table>
+            <tbody id="contentArea" className="clusterize-content">
+              <tr className="clusterize-no-data">
+                <td>Loading data…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   }
 
